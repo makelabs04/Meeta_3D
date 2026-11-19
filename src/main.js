@@ -7,7 +7,7 @@ const tabs = [...document.querySelectorAll('[role="tab"]')];
 const panel = $('viewer-panel');
 const canvas = $('viewport');
 const status = $('status-box');
-const tools = [$('zoom-out'), $('zoom-in'), $('reset')];
+const tools = [$('zoom-out'), $('zoom-in'), $('view-top'), $('view-bottom'), $('reset')];
 const loader = new GLTFLoader();
 let stage;
 let active = '';
@@ -172,6 +172,8 @@ $('retry').addEventListener('click', () => openModel(active, true));
 $('zoom-out').addEventListener('click', () => stage?.zoom(1 / 0.82));
 $('zoom-in').addEventListener('click', () => stage?.zoom(0.82));
 $('reset').addEventListener('click', () => stage?.resetView());
+$('view-top').addEventListener('click', () => stage?.viewFrom('top'));
+$('view-bottom').addEventListener('click', () => stage?.viewFrom('bottom'));
 canvas.addEventListener('webglcontextlost', event => {
   event.preventDefault();
   request?.abort();

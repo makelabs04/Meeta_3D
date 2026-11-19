@@ -76,7 +76,8 @@ export class Stage {
     this.renderer.toneMappingExposure = 1.03;
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(31, 1, 0.055, 50);
+    // Small near clipping plane allows close inspection of the head and base.
+    this.camera = new THREE.PerspectiveCamera(31, 1, 0.012, 80);
     this.camera.position.copy(homeDirection).multiplyScalar(5);
     const room = new RoomEnvironment();
     const pmrem = new THREE.PMREMGenerator(this.renderer);
@@ -95,13 +96,17 @@ export class Stage {
     this.scene.add(key, rim, fill, new THREE.HemisphereLight(0xf1f2ff, 0x61554b, 0.7), makeFloor());
 
     this.controls = new OrbitControls(this.camera, canvas);
-    this.controls.enablePan = false;
+    // Full orbital inspection: top, underside, and right-drag/two-finger pan.
+    this.controls.enablePan = true;
+    this.controls.screenSpacePanning = true;
+    this.controls.panSpeed = 0.85;
+    this.controls.zoomToCursor = true;
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.12;
     this.controls.rotateSpeed = 0.68;
     this.controls.zoomSpeed = 0.8;
-    this.controls.minPolarAngle = 0.12;
-    this.controls.maxPolarAngle = Math.PI / 2 - 0.035;
+    this.controls.minPolarAngle = 0.025;
+    this.controls.maxPolarAngle = Math.PI - 0.025;
     this.controls.addEventListener('change', () => this.requestFrame());
     this.controls.addEventListener('start', () => this.clearFocus());
     this.bindInput();
@@ -154,6 +159,8 @@ export class Stage {
         case '+': case '=': this.zoom(0.82); break;
         case '-': case '_': this.zoom(1 / 0.82); break;
         case 'r': this.resetView(); break;
+        case 't': this.viewFrom('top'); break;
+        case 'b': this.viewFrom('bottom'); break;
         default: return;
       }
       event.preventDefault();
@@ -182,8 +189,8 @@ export class Stage {
     this.camera.updateProjectionMatrix();
     const halfFov = Math.tan(THREE.MathUtils.degToRad(this.camera.fov * .5));
     this.fitDistance = Math.max(MODEL_HEIGHT * .58 / halfFov, .70 / (halfFov * this.camera.aspect)) + .09;
-    this.controls.minDistance = this.fitDistance * .42;
-    this.controls.maxDistance = this.fitDistance * 2.7;
+    this.controls.minDistance = Math.max(0.28, this.fitDistance * .12);
+    this.controls.maxDistance = this.fitDistance * 3;
     if (previousDistance > 0) {
       const offset = this.camera.position.clone().sub(this.controls.target);
       this.camera.position.copy(this.controls.target).add(offset.multiplyScalar(this.fitDistance / previousDistance));
@@ -224,6 +231,23 @@ export class Stage {
     spherical.phi = clamp(spherical.phi + vertical, this.controls.minPolarAngle, this.controls.maxPolarAngle);
     this.camera.position.copy(this.controls.target).add(offset.setFromSpherical(spherical));
     this.controls.update();
+    this.requestFrame();
+  }
+
+  viewFrom(direction) {
+    if (!this.robot || !['top', 'bottom'].includes(direction)) return;
+    this.clearFocus();
+    // Preserve the current inspection center and zoom level.
+    const distance = clamp(this.camera.position.distanceTo(this.controls.target),
+      this.controls.minDistance, this.controls.maxDistance);
+    this.controls.enableDamping = false;
+    this.controls.update();
+    const dir = direction === 'top'
+      ? new THREE.Vector3(0, 1, 0.025)
+      : new THREE.Vector3(0, -1, 0.025);
+    this.camera.position.copy(this.controls.target).addScaledVector(dir.normalize(), distance);
+    this.controls.update();
+    this.controls.enableDamping = true;
     this.requestFrame();
   }
 

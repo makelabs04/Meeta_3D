@@ -207,8 +207,10 @@ export function createRobot(gltf, variant) {
   let lastUserActivity = 0;
   let elapsed = 0;
   const freeArms = variant !== 'plate';
+  // Only motions supported by the exported arm mechanism are offered.
+  // In particular, there is no lateral shoulder-raise gesture.
   const gestureLengths = {
-    wave: 3.5, handshake: 3.2, welcome: 3.1, raise: 3.0,
+    wave: 3.5, handshake: 3.2, welcome: 3.1,
     nod: 2.3, left: 2.8, right: 2.8, center: 1.1
   };
 
@@ -269,10 +271,18 @@ export function createRobot(gltf, variant) {
         const side = pointer.part.startsWith('left') ? 'left' : 'right';
         const sign = side === 'left' ? 1 : -1;
         const px = pointer.lx, py = pointer.ly;
-        rotate(side + 'Arm', -0.16 - 0.48 * Math.max(0, py),
-          sign * 0.11 * px, sign * (0.18 + 0.45 * Math.max(0, py)));
-        rotate(side + 'Elbow', -0.25 - 0.46 * Math.max(0, py));
-        rotate(side + 'Hand', -0.10 * py, 0.22 * px, sign * 0.16 * px);
+        // MEETA Tablet shoulders are single-axis pitch joints: FORWARD/BACK ONLY.
+        // The small wrist adjustment is not a sideways shoulder rotation.
+        if (variant === 'tablet') {
+          rotate(side + 'Arm', -0.12 - 0.67 * Math.max(0, py), 0, 0);
+          rotate(side + 'Elbow', -0.18 - 0.52 * Math.max(0, py), 0, 0);
+          rotate(side + 'Hand', -0.08 * py, 0.12 * px, 0);
+        } else {
+          rotate(side + 'Arm', -0.16 - 0.48 * Math.max(0, py),
+            sign * 0.08 * px, sign * (0.11 + 0.20 * Math.max(0, py)));
+          rotate(side + 'Elbow', -0.25 - 0.46 * Math.max(0, py));
+          rotate(side + 'Hand', -0.10 * py, 0.22 * px, sign * 0.12 * px);
+        }
       }
     } else if (autoMotion && elapsed - lastUserActivity > 1.5) {
       idleTime += delta;
@@ -297,29 +307,41 @@ export function createRobot(gltf, variant) {
       const w = Math.sin(gestureTime * Math.PI * 4.4);
       switch (gesture) {
         case 'wave':
-          rotate('rightArm', -0.10 * s, 0, -1.38 * s);
-          rotate('rightElbow', -0.85 * s);
-          rotate('rightHand', 0, 0, (0.26 * w - 0.12) * s);
-          rotate('head', -0.06 * s, -0.23 * s);
+          // Pitch the upper arm FORWARD, then bend the forearm upward by its
+          // elbow pitch. No sideways/T-pose shoulder roll. Wiggle at the wrist.
+          rotate('rightArm', -1.04 * s, 0, 0);
+          rotate('rightElbow', -1.22 * s, 0, 0);
+          rotate('rightHand', (0.09 + 0.08 * w) * s, 0, 0.20 * w * s);
+          rotate('head', -0.06 * s, -0.18 * s);
           break;
         case 'handshake':
-          rotate('rightArm', -0.78 * s, 0, -0.20 * s);
-          rotate('rightElbow', -0.52 * s);
-          rotate('rightHand', (0.12 + 0.14 * w) * s, 0, -0.06 * s);
+          if (variant === 'tablet') {
+            // Tablet: forward-only shoulder pitch; keep its original hinge plane.
+            rotate('rightArm', -0.83 * s, 0, 0);
+            rotate('rightElbow', -0.42 * s, 0, 0);
+            rotate('rightHand', (0.10 + 0.13 * w) * s, 0, 0);
+          } else {
+            // Preserve the Triangle model's previously approved handshake.
+            rotate('rightArm', -0.78 * s, 0, -0.20 * s);
+            rotate('rightElbow', -0.52 * s);
+            rotate('rightHand', (0.12 + 0.14 * w) * s, 0, -0.06 * s);
+          }
           rotate('head', 0.10 * s, -0.16 * s);
           break;
         case 'welcome':
-          rotate('leftArm', -0.16 * s, 0, 0.92 * s);
-          rotate('rightArm', -0.16 * s, 0, -0.92 * s);
-          rotate('leftElbow', -0.12 * s);
-          rotate('rightElbow', -0.12 * s);
+          if (variant === 'tablet') {
+            // Both shoulders stay inside the forward/backward pitch plane.
+            rotate('leftArm', -0.58 * s, 0, 0);
+            rotate('rightArm', -0.58 * s, 0, 0);
+            rotate('leftElbow', -0.35 * s);
+            rotate('rightElbow', -0.35 * s);
+          } else {
+            rotate('leftArm', -0.16 * s, 0, 0.92 * s);
+            rotate('rightArm', -0.16 * s, 0, -0.92 * s);
+            rotate('leftElbow', -0.12 * s);
+            rotate('rightElbow', -0.12 * s);
+          }
           rotate('head', -0.10 * s);
-          break;
-        case 'raise':
-          rotate('leftArm', -0.22 * s, 0, 1.55 * s);
-          rotate('rightArm', -0.22 * s, 0, -1.55 * s);
-          rotate('leftElbow', -0.18 * s);
-          rotate('rightElbow', -0.18 * s);
           break;
         case 'nod':
           rotate('head', (0.08 + 0.29 * Math.sin(gestureTime * 6.7)) * s, 0, 0);
@@ -340,7 +362,10 @@ export function createRobot(gltf, variant) {
     const blend = reducedMotion ? 1 : 1 - Math.exp(-9 * delta);
     let moving = false;
     for (const [name, joint] of Object.entries(joints)) {
-      const targetAngles = rotations.get(name) || [0, 0, 0];
+      let targetAngles = rotations.get(name) || [0, 0, 0];
+      if (variant === 'tablet' && (name === 'leftArm' || name === 'rightArm')) {
+        targetAngles = [THREE.MathUtils.clamp(targetAngles[0], -1.18, 0.25), 0, 0];
+      }
       for (const [index, axis] of ['x', 'y', 'z'].entries()) {
         const target = targetAngles[index] * natural;
         const difference = target - joint.rotation[axis];
