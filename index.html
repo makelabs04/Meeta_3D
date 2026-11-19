@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#101112">
-    <meta name="description" content="Explore the MEETA humanoid robot in 3D. Switch configurations and move its parts with your pointer.">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="description" content="Explore Guest Welcoming MEETA, Guiding MEETA and MEETA in 3D. Discover interactive motion and design by MAKE Labs.">
     <link rel="icon" type="image/png" href="./assets/make-labs-logo.png">
     <title>MEETA Robot Explorer · MAKE Labs</title>
     <link rel="stylesheet" href="./src/styles.css">
@@ -23,30 +23,38 @@
     </svg>
     <main class="explorer" id="explorer">
       <header class="masthead">
-        <div class="brand" aria-label="MAKE Labs — Powering Progress">
-          <img class="brand-logo" src="./assets/make-labs-logo.png" alt="MAKE Labs — Powering Progress" width="220" height="50">
+        <div class="masthead-inner">
+          <div class="brand" aria-label="MAKE Labs — Powering Progress">
+            <img class="brand-logo" src="./assets/make-labs-logo.png" alt="MAKE Labs — Powering Progress" width="220" height="50">
+            <span class="brand-divider" aria-hidden="true"></span>
+            <span class="brand-context">Interactive robot explorer</span>
+          </div>
+          <nav class="header-actions" aria-label="Page navigation">
+            <a class="header-about" href="#about">About MEETA</a>
+            <button class="fullscreen" id="fullscreen" type="button" aria-pressed="false" hidden>
+              <svg class="icon"><use href="#i-expand"/></svg><span>Fullscreen</span>
+            </button>
+          </nav>
         </div>
-        <button class="fullscreen" id="fullscreen" type="button" aria-pressed="false" hidden>
-          <svg class="icon"><use href="#i-expand"/></svg><span>Fullscreen</span>
-        </button>
       </header>
 
       <div class="content">
         <section class="heading-row" aria-label="Robot configurations">
           <div>
-            <p class="eyebrow">Humanoid robot</p>
-            <h1>MEETA<span class="title-dot" aria-hidden="true">.</span></h1>
+            <p class="eyebrow"><span class="eyebrow-line"></span> MAKE Labs · Humanoid robots</p>
+            <h1>MEETA<span class="title-dot" aria-hidden="true">.</span><span class="hero-tag">3D Explorer</span></h1>
+            <p class="hero-description" id="variant-description">Experience a different kind of welcome with MEETA.</p>
           </div>
           <div class="tabs" role="tablist" aria-label="Robot configuration">
-            <button type="button" role="tab" id="tab-plate" aria-selected="true" aria-controls="viewer-panel" tabindex="0" data-model="plate">Plate</button>
-            <button type="button" role="tab" id="tab-tablet" aria-selected="false" aria-controls="viewer-panel" tabindex="-1" data-model="tablet">Tablet</button>
-            <button type="button" role="tab" id="tab-triangle" aria-selected="false" aria-controls="viewer-panel" tabindex="-1" data-model="triangle">Triangle body</button>
+            <button type="button" role="tab" id="tab-plate" aria-selected="true" aria-controls="viewer-panel" tabindex="0" data-model="plate">Guest Welcoming MEETA</button>
+            <button type="button" role="tab" id="tab-tablet" aria-selected="false" aria-controls="viewer-panel" tabindex="-1" data-model="tablet">Guiding MEETA</button>
+            <button type="button" role="tab" id="tab-triangle" aria-selected="false" aria-controls="viewer-panel" tabindex="-1" data-model="triangle">MEETA</button>
           </div>
         </section>
 
         <section class="viewer-panel" id="viewer-panel" role="tabpanel" aria-labelledby="tab-plate">
           <div class="stage" id="stage">
-            <canvas id="viewport" tabindex="0" aria-label="Interactive MEETA robot. Drag to orbit in any direction, right drag to pan, T for top view, B for bottom view, R to reset." aria-describedby="guide">This interactive view requires WebGL.</canvas>
+            <canvas id="viewport" tabindex="0" aria-label="Interactive MEETA robot. Drag up or down to see above and below; drag left or right to orbit; right-drag to pan; F for front view and R to fit the robot." aria-describedby="guide">This interactive view requires WebGL.</canvas>
             <button class="motion-toggle" id="motion-toggle" type="button" aria-controls="motion-panel" aria-expanded="false">
               <span class="motion-toggle-dot" aria-hidden="true"></span> Motion controls
             </button>
@@ -91,15 +99,16 @@
                 <button id="zoom-out" type="button" title="Zoom out (−)" aria-label="Zoom out" disabled><svg class="icon"><use href="#i-minus"/></svg></button>
                 <button id="zoom-in" type="button" title="Zoom in (+)" aria-label="Zoom in" disabled><svg class="icon"><use href="#i-plus"/></svg></button>
                 <span class="tool-divider"></span>
+                <button id="view-front" class="view-angle" type="button" title="Front view (F)" aria-label="Front view" disabled>Front</button>
                 <button id="view-top" class="view-angle" type="button" title="Top view (T)" aria-label="View from above" disabled>Top</button>
                 <button id="view-bottom" class="view-angle" type="button" title="Bottom view (B)" aria-label="View from below" disabled>Bottom</button>
                 <span class="tool-divider"></span>
-                <button id="reset" class="reset" type="button" title="Reset view (R)" aria-label="Reset view" disabled><svg class="icon"><use href="#i-reset"/></svg><span>Reset view</span></button>
+                <button id="reset" class="reset" type="button" title="Fit full robot (R)" aria-label="Fit full robot in view" disabled><svg class="icon"><use href="#i-reset"/></svg><span>Fit robot</span></button>
               </div>
             </div>
             <div class="status" id="status-box" role="status" aria-live="polite">
               <span class="loader-line" aria-hidden="true"></span>
-              <strong id="status-title">Loading Plate…</strong>
+              <strong id="status-title">Loading Guest Welcoming MEETA…</strong>
               <span id="status-detail"></span>
               <button type="button" id="retry" hidden>Try again</button>
             </div>
@@ -107,10 +116,24 @@
 
           <div class="guide" id="guide">
             <span><svg class="icon"><use href="#i-pointer"/></svg><span class="mouse-hint">Head tracks pointer · hands follow nearby</span><span class="touch-hint">Tap to interact</span></span>
-            <span><svg class="icon"><use href="#i-orbit"/></svg>Drag to orbit · Right-drag to pan</span>
+            <span><svg class="icon"><use href="#i-orbit"/></svg>Drag up/down to see top or underside · Right-drag to pan</span>
             <span><svg class="icon"><use href="#i-scroll"/></svg><span class="mouse-hint">Scroll to zoom</span><span class="touch-hint">Pinch to zoom</span></span>
           </div>
         </section>
+        <section class="about-section" id="about" aria-labelledby="about-title">
+          <div class="about-intro">
+            <span class="section-kicker">ABOUT THE PLATFORM</span>
+            <h2 id="about-title">Meet MEETA<span>.</span></h2>
+            <p>Designed by MAKE Labs Research and Development, MEETA is an interactive humanoid robot concept for welcoming visitors, sharing information and demonstrating human–robot interaction.</p>
+            <p>Explore each configuration in 3D, move around the model from any angle and try its interactive gestures.</p>
+          </div>
+          <div class="about-cards">
+            <article><span class="card-index">01 / WELCOME</span><h3>Guest Welcoming MEETA</h3><p>A reception-style configuration for greeting visitors and introducing an experience.</p></article>
+            <article><span class="card-index">02 / GUIDE</span><h3>Guiding MEETA</h3><p>A tablet-equipped configuration for presenting guidance and information.</p></article>
+            <article><span class="card-index">03 / EXPLORE</span><h3>MEETA</h3><p>Explore the humanoid form, its articulated arms and its interactive presentation gestures.</p></article>
+          </div>
+        </section>
+        <footer class="site-footer"><span>MAKE Labs Research and Development</span><span>MEETA interactive 3D experience</span></footer>
       </div>
     </main>
     <noscript><p>Please enable JavaScript to view the MEETA models.</p></noscript>
