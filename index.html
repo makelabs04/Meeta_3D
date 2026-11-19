@@ -20,6 +20,9 @@
       <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 9a8.2 8.2 0 1 1-.2 6M4 4v5.4h5.4"/></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14m-7-7v14"/></symbol>
       <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 7h4l1.5-2h5L16 7h4v12H4z"/><circle cx="12" cy="13" r="3.4"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 16v4h16v-4"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
     </svg>
     <main class="explorer" id="explorer">
       <header class="masthead">
@@ -55,6 +58,44 @@
         <section class="viewer-panel" id="viewer-panel" role="tabpanel" aria-labelledby="tab-plate">
           <div class="stage" id="stage">
             <canvas id="viewport" tabindex="0" aria-label="Interactive MEETA robot. Drag up or down to see above and below; drag left or right to orbit; right-drag to pan; F for front view and R to fit the robot." aria-describedby="guide">This interactive view requires WebGL.</canvas>
+            <button class="studio-toggle" id="studio-toggle" type="button" aria-controls="studio-panel" aria-expanded="false" title="Set background and capture a photo">
+              <svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg> Photo studio
+            </button>
+            <aside class="studio-panel" id="studio-panel" aria-label="MEETA photo studio" hidden>
+              <div class="studio-panel-head">
+                <div><strong>Photo studio</strong><small>Customize the 3D viewport only</small></div>
+                <button type="button" id="studio-close" class="motion-close" aria-label="Close photo studio">×</button>
+              </div>
+              <p class="motion-section-label">Scene background</p>
+              <div class="studio-scenes" role="group" aria-label="Background presets">
+                <button class="studio-scene" type="button" data-scene="light" aria-pressed="true"><span class="scene-mini scene-mini-light"></span><span>Light studio</span></button>
+                <button class="studio-scene" type="button" data-scene="dark" aria-pressed="false"><span class="scene-mini scene-mini-dark"></span><span>MEETA on Black</span></button>
+              </div>
+              <div class="studio-custom-row">
+                <label for="scene-color">Custom colour</label>
+                <input id="scene-color" type="color" value="#e9f7ff" aria-label="Choose custom viewport background colour">
+              </div>
+              <div class="studio-upload-row">
+                <label class="studio-upload" for="scene-upload"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg> Upload background image</label>
+                <input id="scene-upload" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+                <button id="scene-remove-image" type="button" hidden>Remove image</button>
+              </div>
+              <p class="studio-note" id="scene-note" role="status" aria-live="polite">Choose a background for the MEETA 3D viewer.</p>
+              <p class="motion-section-label">Camera angle</p>
+              <div class="studio-angle-grid" role="group" aria-label="Camera positions">
+                <button type="button" data-photo-angle="front">Front</button>
+                <button type="button" data-photo-angle="three-quarter">3/4 view</button>
+                <button type="button" data-photo-angle="left">Left</button>
+                <button type="button" data-photo-angle="right">Right</button>
+                <button type="button" data-photo-angle="top">Top</button>
+                <button type="button" data-photo-angle="bottom">Bottom</button>
+              </div>
+              <p class="studio-tip">Drag the robot to refine the angle, right-drag to move the camera, or scroll to zoom. The 3D viewer is your live camera preview.</p>
+              <div class="studio-capture-actions">
+                <button type="button" id="photo-preview-button"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg> Preview photo</button>
+                <button type="button" id="photo-capture-button"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg> Capture PNG</button>
+              </div>
+            </aside>
             <button class="motion-toggle" id="motion-toggle" type="button" aria-controls="motion-panel" aria-expanded="false">
               <span class="motion-toggle-dot" aria-hidden="true"></span> Motion controls
             </button>
@@ -136,6 +177,19 @@
         <footer class="site-footer"><span>MAKE Labs Research and Development</span><span>MEETA interactive 3D experience</span></footer>
       </div>
     </main>
+    <div class="photo-preview-overlay" id="photo-preview" role="dialog" aria-modal="true" aria-labelledby="photo-preview-title" hidden>
+      <div class="photo-preview-card">
+        <div class="photo-preview-head">
+          <div><strong id="photo-preview-title">Photo preview</strong><small>Only the robot and selected background are captured</small></div>
+          <button type="button" class="motion-close" id="photo-preview-close" aria-label="Close photo preview">×</button>
+        </div>
+        <img id="photo-preview-image" alt="Photo of MEETA with the selected scene background">
+        <div class="photo-preview-actions">
+          <button type="button" id="photo-retake">Back to camera</button>
+          <button type="button" id="photo-download"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg> Save PNG</button>
+        </div>
+      </div>
+    </div>
     <noscript><p>Please enable JavaScript to view the MEETA models.</p></noscript>
     <script type="importmap">
     {
