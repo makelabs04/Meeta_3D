@@ -2,9 +2,9 @@ import * as THREE from 'three';
 
 // These keys match the tabs; filenames are case-sensitive on most web hosts.
 export const MODELS = {
-  plate: { label: 'Plate', file: 'MEETA_plate.glb' },
-  tablet: { label: 'Tablet', file: 'MEETA_tablet.glb' },
-  triangle: { label: 'Triangle body', file: 'MEETA_Body-Triangle-part-updated.glb' }
+  plate: { label: 'Guest Welcoming MEETA', file: 'MEETA_plate.glb' },
+  tablet: { label: 'Guiding MEETA', file: 'MEETA_tablet.glb' },
+  triangle: { label: 'MEETA', file: 'MEETA_Body-Triangle-part-updated.glb' }
 };
 
 export const PART_LABELS = {
@@ -125,20 +125,20 @@ export function createRobot(gltf, variant) {
   // These are the cut planes of the three individual CAD shells, in source units.
   attachPart(base, 'base', 'baseOrange', 'triangle top 2', 131.463);
   attachPart(base, 'base', 'baseOrange', 'triangle top 1', 131.210);
-  attachPart(base, 'base', 'baseOrange', 'Base back plate', 131.702);
+  attachPart(base, 'base', 'black', 'Base back plate', 131.702);
   attachPart(base, 'base', 'graphite', 'circle.001');
 
   attachPart(torso, 'torso', 'orange', 'chest');
-  attachPart(torso, 'torso', 'orange', 'chest-back Plate');
+  attachPart(torso, 'torso', 'graphite', 'chest-back Plate');
   attachPart(torso, 'torso', 'black', 'inside-plate');
   attachPart(torso, 'torso', 'black', 'shoulder');
   attachPart(torso, 'torso', 'black', 'Text');
   attachPart(torso, 'head', 'graphite', 'neck', 128.099);
   attachPart(head, 'head', 'orange', 'face.001');
-  attachPart(head, 'head', 'orange', 'head back hole.001');
+  attachPart(head, 'head', 'black', 'head back hole.001');
   attachPart(head, 'head', 'orange', 'ear', HEAD_AXIS);
   attachPart(head, 'head', 'lens', 'eyes', HEAD_AXIS);
-  attachPart(head, 'head', 'orange', 'head hole');
+  attachPart(head, 'head', 'black', 'head hole');
 
   const isPlate = variant === 'plate';
   // A rigid plate joins the two forearms. Shared pitch pivots keep both mounts aligned.
@@ -292,7 +292,10 @@ export function createRobot(gltf, variant) {
 
     // Automatic demonstration is subtle. The plate model only moves its head;
     // the other two configurations occasionally greet the visitor.
-    if (autoMotion && freeArms && !userControl && !gesture &&
+    // Tablet model remains in its neutral, straight-arm pose unless a gesture
+    // is explicitly selected or the visitor interacts near a hand.
+    // Automatic waving is limited to the triangle configuration.
+    if (autoMotion && variant === 'triangle' && !userControl && !gesture &&
         elapsed - lastUserActivity > 5.5 && idleTime > 14) {
       gesture = 'wave';
       gestureTime = 0;

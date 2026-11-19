@@ -4,7 +4,8 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MODEL_HEIGHT } from './robot.js';
 
 const clamp = THREE.MathUtils.clamp;
-const homeDirection = new THREE.Vector3(0.49, 0.17, 1).normalize();
+// Gentle three-quarter front angle; include the entire head and base at rest.
+const homeDirection = new THREE.Vector3(0, 0.09, 1).normalize();
 
 function makeFloor() {
   // A small photographic contact shadow and a fading inspection grid.
@@ -14,17 +15,17 @@ function makeFloor() {
   const center = image.width / 2;
   ctx.translate(center, center);
   ctx.lineWidth = 1.35;
-  ctx.strokeStyle = 'rgba(166,162,157,.28)';
+  ctx.strokeStyle = 'rgba(101,165,184,.22)';
   ctx.beginPath();
   for (let p = -center; p <= center; p += 32) {
     ctx.moveTo(p, -center); ctx.lineTo(p, center);
     ctx.moveTo(-center, p); ctx.lineTo(center, p);
   }
   ctx.stroke();
-  ctx.strokeStyle = 'rgba(198,187,176,.66)';
+  ctx.strokeStyle = 'rgba(24,173,222,.46)';
   ctx.lineWidth = 2.2;
   ctx.beginPath(); ctx.arc(0, 0, 170, 0, Math.PI * 2); ctx.stroke();
-  ctx.strokeStyle = '#c76535';
+  ctx.strokeStyle = '#ff8d56';
   ctx.lineWidth = 3.2;
   for (const angle of [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2]) {
     ctx.beginPath(); ctx.arc(0, 0, 170, angle - .07, angle + .07); ctx.stroke();
@@ -36,8 +37,8 @@ function makeFloor() {
   ctx.fillRect(-center, -center, 1024, 1024);
   ctx.globalCompositeOperation = 'source-over';
   const shadow = ctx.createRadialGradient(0, 0, 30, 0, 0, 125);
-  shadow.addColorStop(0, 'rgba(0,0,0,.98)');
-  shadow.addColorStop(.49, 'rgba(0,0,0,.73)');
+  shadow.addColorStop(0, 'rgba(38,65,75,.25)');
+  shadow.addColorStop(.49, 'rgba(54,91,104,.13)');
   shadow.addColorStop(1, 'transparent');
   ctx.fillStyle = shadow;
   ctx.fillRect(-125, -125, 250, 250);
@@ -100,10 +101,18 @@ export class Stage {
     this.controls.enablePan = true;
     this.controls.screenSpacePanning = true;
     this.controls.panSpeed = 0.85;
-    this.controls.zoomToCursor = true;
+    // Keep orbiting about the actual robot even after zooming in.
+    this.controls.zoomToCursor = false;
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.12;
-    this.controls.rotateSpeed = 0.68;
+    this.controls.rotateSpeed = 0.72;
+    // Like a 3D design viewport: either left- or middle-drag rotates,
+    // while right-drag pans. Wheel zooms; touch supports orbit/pinch/pan.
+    this.controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+    this.controls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE;
+    this.controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+    this.controls.touches.ONE = THREE.TOUCH.ROTATE;
+    this.controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
     this.controls.zoomSpeed = 0.8;
     this.controls.minPolarAngle = 0.025;
     this.controls.maxPolarAngle = Math.PI - 0.025;
@@ -159,6 +168,7 @@ export class Stage {
         case '+': case '=': this.zoom(0.82); break;
         case '-': case '_': this.zoom(1 / 0.82); break;
         case 'r': this.resetView(); break;
+        case 'f': this.viewFrom('front'); break;
         case 't': this.viewFrom('top'); break;
         case 'b': this.viewFrom('bottom'); break;
         default: return;
@@ -177,6 +187,7 @@ export class Stage {
       robot.setPaused(this.motionPaused);
     }
     this.controls.enabled = Boolean(robot);
+    this.resize();
     this.resetView();
   }
 
@@ -188,8 +199,16 @@ export class Stage {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     const halfFov = Math.tan(THREE.MathUtils.degToRad(this.camera.fov * .5));
-    this.fitDistance = Math.max(MODEL_HEIGHT * .58 / halfFov, .70 / (halfFov * this.camera.aspect)) + .09;
-    this.controls.minDistance = Math.max(0.28, this.fitDistance * .12);
+    // Fit the complete loaded mesh, not only an estimated torso height.
+    // Extra breathing room prevents the face/head from clipping at page load.
+    const bounds = this.robot ? new THREE.Box3().setFromObject(this.robot.root, true) : null;
+    const dimensions = bounds && !bounds.isEmpty() ? bounds.getSize(new THREE.Vector3())
+      : new THREE.Vector3(0.95, MODEL_HEIGHT, 0.95);
+    const verticalFit = dimensions.y * .64 / halfFov;
+    const horizontalFit = dimensions.x * .64 / (halfFov * Math.max(0.3, this.camera.aspect));
+    const depthAllowance = dimensions.z * .48;
+    this.fitDistance = Math.max(verticalFit, horizontalFit, 2.4) + depthAllowance;
+    this.controls.minDistance = Math.max(0.23, this.fitDistance * .065);
     this.controls.maxDistance = this.fitDistance * 3;
     if (previousDistance > 0) {
       const offset = this.camera.position.clone().sub(this.controls.target);
@@ -205,7 +224,12 @@ export class Stage {
     // Flush residual orbit damping before writing an exact home pose.
     this.controls.enableDamping = false;
     this.controls.update();
-    this.controls.target.set(0, MODEL_HEIGHT * .495, 0);
+    // Frame the full assembly even after inspecting a zoomed-in part.
+    const bounds = this.robot ? new THREE.Box3().setFromObject(this.robot.root, true) : null;
+    const center = bounds && !bounds.isEmpty()
+      ? bounds.getCenter(new THREE.Vector3())
+      : new THREE.Vector3(0, MODEL_HEIGHT * .5, 0);
+    this.controls.target.copy(center);
     this.camera.position.copy(this.controls.target).addScaledVector(homeDirection, this.fitDistance);
     this.controls.update();
     this.controls.enableDamping = true;
@@ -235,16 +259,19 @@ export class Stage {
   }
 
   viewFrom(direction) {
-    if (!this.robot || !['top', 'bottom'].includes(direction)) return;
+    if (!this.robot || !['front', 'top', 'bottom'].includes(direction)) return;
     this.clearFocus();
-    // Preserve the current inspection center and zoom level.
-    const distance = clamp(this.camera.position.distanceTo(this.controls.target),
-      this.controls.minDistance, this.controls.maxDistance);
+    // View presets always reframe the FULL robot, even after close-up zooming.
+    const bounds = new THREE.Box3().setFromObject(this.robot.root, true);
+    if (!bounds.isEmpty()) this.controls.target.copy(bounds.getCenter(new THREE.Vector3()));
+    const distance = this.fitDistance;
     this.controls.enableDamping = false;
     this.controls.update();
-    const dir = direction === 'top'
-      ? new THREE.Vector3(0, 1, 0.025)
-      : new THREE.Vector3(0, -1, 0.025);
+    const dir = direction === 'front'
+      ? new THREE.Vector3(0, 0.10, 1)
+      : direction === 'top'
+        ? new THREE.Vector3(0, 1, 0.025)
+        : new THREE.Vector3(0, -1, 0.025);
     this.camera.position.copy(this.controls.target).addScaledVector(dir.normalize(), distance);
     this.controls.update();
     this.controls.enableDamping = true;

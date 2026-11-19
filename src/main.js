@@ -7,7 +7,7 @@ const tabs = [...document.querySelectorAll('[role="tab"]')];
 const panel = $('viewer-panel');
 const canvas = $('viewport');
 const status = $('status-box');
-const tools = [$('zoom-out'), $('zoom-in'), $('view-top'), $('view-bottom'), $('reset')];
+const tools = [$('zoom-out'), $('zoom-in'), $('view-front'), $('view-top'), $('view-bottom'), $('reset')];
 const loader = new GLTFLoader();
 let stage;
 let active = '';
@@ -18,6 +18,11 @@ let tabletOrientation = 'portrait';
 const motionPanel = $('motion-panel');
 const motionToggle = $('motion-toggle');
 const motionButtons = [...document.querySelectorAll('[data-gesture]')];
+const descriptions = {
+  plate: 'A friendly first impression. Discover MEETA in its guest-welcoming configuration.',
+  tablet: 'Designed to assist with directions and information, with a tablet display and interactive gestures.',
+  triangle: 'Explore MEETA’s humanoid form, animated head movements and articulated hands.'
+};
 
 function showMotionPanel(open) {
   motionPanel.hidden = !open;
@@ -108,6 +113,7 @@ async function openModel(key, force = false) {
   if (key === active && !force) return;
   active = key;
   selectTab(key);
+  $('variant-description').textContent = descriptions[key];
   updateMotionControls(key);
   request?.abort();
   const current = new AbortController();
@@ -172,6 +178,7 @@ $('retry').addEventListener('click', () => openModel(active, true));
 $('zoom-out').addEventListener('click', () => stage?.zoom(1 / 0.82));
 $('zoom-in').addEventListener('click', () => stage?.zoom(0.82));
 $('reset').addEventListener('click', () => stage?.resetView());
+$('view-front').addEventListener('click', () => stage?.viewFrom('front'));
 $('view-top').addEventListener('click', () => stage?.viewFrom('top'));
 $('view-bottom').addEventListener('click', () => stage?.viewFrom('bottom'));
 canvas.addEventListener('webglcontextlost', event => {
