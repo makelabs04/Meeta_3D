@@ -69,7 +69,7 @@ export class Stage {
     this.autoMotion = true;
     this.motionPaused = false;
     this.motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
-    this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -94,7 +94,8 @@ export class Stage {
     rim.position.set(3, 3.6, -2.8);
     const fill = new THREE.DirectionalLight(0xd9e7ff, 1.1);
     fill.position.set(2.5, 2.3, 3.4);
-    this.scene.add(key, rim, fill, new THREE.HemisphereLight(0xf1f2ff, 0x61554b, 0.7), makeFloor());
+    this.floor = makeFloor();
+    this.scene.add(key, rim, fill, new THREE.HemisphereLight(0xf1f2ff, 0x61554b, 0.7), this.floor);
 
     this.controls = new OrbitControls(this.camera, canvas);
     // Full orbital inspection: top, underside, and right-drag/two-finger pan.
@@ -259,7 +260,7 @@ export class Stage {
   }
 
   viewFrom(direction) {
-    if (!this.robot || !['front', 'top', 'bottom'].includes(direction)) return;
+    if (!this.robot || !['front', 'top', 'bottom', 'left', 'right', 'three-quarter'].includes(direction)) return;
     this.clearFocus();
     // View presets always reframe the FULL robot, even after close-up zooming.
     const bounds = new THREE.Box3().setFromObject(this.robot.root, true);
@@ -267,15 +268,67 @@ export class Stage {
     const distance = this.fitDistance;
     this.controls.enableDamping = false;
     this.controls.update();
-    const dir = direction === 'front'
-      ? new THREE.Vector3(0, 0.10, 1)
-      : direction === 'top'
-        ? new THREE.Vector3(0, 1, 0.025)
-        : new THREE.Vector3(0, -1, 0.025);
+    const directions = {
+      front: [0, 0.10, 1],
+      'three-quarter': [0.73, 0.33, 1],
+      left: [-1, 0.12, 0.05],
+      right: [1, 0.12, 0.05],
+      top: [0, 1, 0.025],
+      bottom: [0, -1, 0.025]
+    };
+    const dir = new THREE.Vector3(...directions[direction]);
     this.camera.position.copy(this.controls.target).addScaledVector(dir.normalize(), distance);
     this.controls.update();
     this.controls.enableDamping = true;
     this.requestFrame();
+  }
+
+  // Change only the 3D stage background/floor; all robot materials are unchanged.
+  setBackdropMode(mode) {
+    if (this.floor) {
+      this.floor.visible = mode !== 'image';
+      this.floor.material.color.set(mode === 'dark' ? 0x647a86 : 0xffffff);
+    }
+    this.requestFrame();
+  }
+
+  // Render the current WebGL pose and composite it with the chosen studio scene.
+  // The HUD and controls are DOM elements, so they never appear in the photo.
+  async captureComposite(background) {
+    if (!this.robot) throw new Error('Choose a loaded MEETA model first.');
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+    const source = this.renderer.domElement;
+    const image = document.createElement('canvas');
+    image.width = source.width;
+    image.height = source.height;
+    const ctx = image.getContext('2d', { alpha: false });
+    const { width: w, height: h } = image;
+
+    if (background.mode === 'image' && background.image) {
+      const img = background.image;
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const factor = Math.max(w / iw, h / ih);
+      const cropW = w / factor, cropH = h / factor;
+      ctx.drawImage(img, (iw - cropW) / 2, (ih - cropH) / 2, cropW, cropH, 0, 0, w, h);
+    } else if (background.mode === 'custom') {
+      ctx.fillStyle = background.color || '#e9f7ff';
+      ctx.fillRect(0, 0, w, h);
+    } else {
+      const dark = background.mode === 'dark';
+      const radial = ctx.createRadialGradient(w * .5, h * .38, 0, w * .5, h * .38, Math.max(w, h) * .7);
+      if (dark) {
+        radial.addColorStop(0, '#383c44'); radial.addColorStop(.6, '#24282e'); radial.addColorStop(1, '#111317');
+      } else {
+        radial.addColorStop(0, '#ffffff'); radial.addColorStop(.5, '#f8fcff'); radial.addColorStop(1, '#e8f5fc');
+      }
+      ctx.fillStyle = radial;
+      ctx.fillRect(0, 0, w, h);
+    }
+    ctx.drawImage(source, 0, 0, w, h);
+    return await new Promise((resolve, reject) => {
+      image.toBlob(blob => blob ? resolve(blob) : reject(new Error('PNG capture unavailable.')), 'image/png');
+    });
   }
 
   gesture(name) {

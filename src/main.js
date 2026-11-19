@@ -24,7 +24,158 @@ const descriptions = {
   triangle: 'Explore MEETA’s humanoid form, animated head movements and articulated hands.'
 };
 
+// Browser-local photo studio: backgrounds never leave the visitor's device.
+const studioPanel = $('studio-panel');
+const studioToggle = $('studio-toggle');
+const stageElement = $('stage');
+const sceneNote = $('scene-note');
+const photoModal = $('photo-preview');
+let sceneBackground = { mode: 'light', color: '#e9f7ff', image: null, imageURL: null };
+let latestPhotoURL = null;
+let captureBusy = false;
+
+function showStudioPanel(open, moveFocus = true) {
+  if (open && !$('motion-panel').hidden) {
+    $('motion-panel').hidden = true;
+    $('motion-toggle').setAttribute('aria-expanded', 'false');
+  }
+  studioPanel.hidden = !open;
+  studioToggle.setAttribute('aria-expanded', String(open));
+  if (moveFocus) (open ? $('studio-close') : studioToggle).focus();
+}
+
+function updateSceneButtons() {
+  for (const b of document.querySelectorAll('[data-scene]'))
+    b.setAttribute('aria-pressed', String(b.dataset.scene === sceneBackground.mode));
+  $('scene-remove-image').hidden = !sceneBackground.image;
+}
+
+function applyScene() {
+  stageElement.dataset.scene = sceneBackground.mode;
+  stageElement.style.setProperty('--scene-colour', sceneBackground.color);
+  if (sceneBackground.imageURL) {
+    stageElement.style.setProperty('--scene-image', `url("${sceneBackground.imageURL}")`);
+  } else {
+    stageElement.style.removeProperty('--scene-image');
+  }
+  stage?.setBackdropMode(sceneBackground.mode);
+  updateSceneButtons();
+}
+
+for (const b of document.querySelectorAll('[data-scene]')) {
+  b.addEventListener('click', () => {
+    sceneBackground.mode = b.dataset.scene;
+    applyScene();
+    sceneNote.textContent = sceneBackground.mode === 'dark' ? 'Black scene selected for the 3D viewport.' : 'Light studio scene selected.';
+  });
+}
+$('scene-color').addEventListener('input', event => {
+  sceneBackground.color = event.target.value;
+  sceneBackground.mode = 'custom';
+  applyScene();
+  sceneNote.textContent = 'Custom colour applied to the viewport.';
+});
+$('scene-upload').addEventListener('change', event => {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type) || file.size > 12 * 1024 * 1024) {
+    sceneNote.textContent = 'Choose a PNG, JPG, WebP or GIF image under 12 MB.';
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    if (sceneBackground.imageURL) URL.revokeObjectURL(sceneBackground.imageURL);
+    sceneBackground.imageURL = url;
+    sceneBackground.image = img;
+    sceneBackground.mode = 'image';
+    applyScene();
+    sceneNote.textContent = `Background applied: ${file.name}. You can capture a photo now.`;
+  };
+  img.onerror = () => {
+    URL.revokeObjectURL(url);
+    sceneNote.textContent = 'This image could not be opened. Try a different file.';
+  };
+  img.src = url;
+});
+$('scene-remove-image').addEventListener('click', () => {
+  if (sceneBackground.imageURL) URL.revokeObjectURL(sceneBackground.imageURL);
+  sceneBackground.imageURL = null;
+  sceneBackground.image = null;
+  sceneBackground.mode = 'light';
+  applyScene();
+  sceneNote.textContent = 'Uploaded background removed.';
+});
+for (const b of document.querySelectorAll('[data-photo-angle]')) {
+  b.addEventListener('click', () => stage?.viewFrom(b.dataset.photoAngle));
+}
+
+function photoFilename() {
+  const date = new Date();
+  const stamp = [date.getFullYear(), String(date.getMonth()+1).padStart(2,'0'), String(date.getDate()).padStart(2,'0')].join('');
+  return `MEETA_${active}_${stamp}.png`;
+}
+function downloadPhoto(url) {
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = photoFilename();
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+}
+function closePhotoModal() {
+  photoModal.hidden = true;
+  $('photo-preview-button').focus();
+}
+async function makePhoto(preview) {
+  if (!stage?.robot || captureBusy) {
+    if (!stage?.robot) sceneNote.textContent = 'Load a robot before capturing a photo.';
+    return;
+  }
+  captureBusy = true;
+  $('photo-preview-button').disabled = true;
+  $('photo-capture-button').disabled = true;
+  sceneNote.textContent = 'Preparing MEETA photo…';
+  try {
+    const blob = await stage.captureComposite(sceneBackground);
+    const url = URL.createObjectURL(blob);
+    if (latestPhotoURL) URL.revokeObjectURL(latestPhotoURL);
+    latestPhotoURL = url;
+    if (preview) {
+      $('photo-preview-image').src = url;
+      photoModal.hidden = false;
+      $('photo-preview-close').focus();
+      sceneNote.textContent = 'Preview ready. Save the PNG or adjust the camera.';
+    } else {
+      downloadPhoto(url);
+      sceneNote.textContent = 'MEETA PNG captured.';
+    }
+  } catch (error) {
+    sceneNote.textContent = error?.message || 'Could not capture the photo.';
+  } finally {
+    captureBusy = false;
+    $('photo-preview-button').disabled = false;
+    $('photo-capture-button').disabled = false;
+  }
+}
+
+studioToggle.addEventListener('click', () => showStudioPanel(studioPanel.hidden));
+$('studio-close').addEventListener('click', () => showStudioPanel(false));
+$('photo-preview-button').addEventListener('click', () => makePhoto(true));
+$('photo-capture-button').addEventListener('click', () => makePhoto(false));
+$('photo-preview-close').addEventListener('click', closePhotoModal);
+$('photo-retake').addEventListener('click', closePhotoModal);
+$('photo-download').addEventListener('click', () => { if (latestPhotoURL) downloadPhoto(latestPhotoURL); });
+photoModal.addEventListener('click', e => { if (e.target === photoModal) closePhotoModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!photoModal.hidden) closePhotoModal();
+  else if (!studioPanel.hidden) showStudioPanel(false);
+});
+
 function showMotionPanel(open) {
+  if (open && !$('studio-panel').hidden) showStudioPanel(false, false);
   motionPanel.hidden = !open;
   motionToggle.setAttribute('aria-expanded', String(open));
   if (open) $('motion-close').focus();
@@ -126,6 +277,7 @@ async function openModel(key, force = false) {
       stage = new Stage(canvas, part => {
         $('part-name').textContent = PART_LABELS[part] || 'Full assembly';
       });
+      stage.setBackdropMode(sceneBackground.mode);
     } catch {
       showStatus('error', '3D display unavailable', 'Open this page in a WebGL 2 browser with hardware acceleration enabled.', true);
       return;
