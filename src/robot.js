@@ -136,7 +136,7 @@ export function createRobot(gltf, variant) {
   attachPart(torso, 'head', 'graphite', 'neck', 128.099);
   attachPart(head, 'head', 'orange', 'face.001');
   attachPart(head, 'head', 'orange', 'head back hole.001');
-  attachPart(head, 'head', 'orange', 'ear', HEAD_AXIS);
+  attachPart(head, 'head', 'graphite', 'ear', HEAD_AXIS);
   attachPart(head, 'head', 'lens', 'eyes', HEAD_AXIS);
   attachPart(head, 'head', 'black', 'head hole');
 
