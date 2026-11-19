@@ -125,17 +125,17 @@ export function createRobot(gltf, variant) {
   // These are the cut planes of the three individual CAD shells, in source units.
   attachPart(base, 'base', 'baseOrange', 'triangle top 2', 131.463);
   attachPart(base, 'base', 'baseOrange', 'triangle top 1', 131.210);
-  attachPart(base, 'base', 'black', 'Base back plate', 131.702);
+  attachPart(base, 'base', 'baseOrange', 'Base back plate', 131.702);
   attachPart(base, 'base', 'graphite', 'circle.001');
 
   attachPart(torso, 'torso', 'orange', 'chest');
-  attachPart(torso, 'torso', 'graphite', 'chest-back Plate');
+  attachPart(torso, 'torso', 'orange', 'chest-back Plate');
   attachPart(torso, 'torso', 'black', 'inside-plate');
   attachPart(torso, 'torso', 'black', 'shoulder');
   attachPart(torso, 'torso', 'black', 'Text');
   attachPart(torso, 'head', 'graphite', 'neck', 128.099);
   attachPart(head, 'head', 'orange', 'face.001');
-  attachPart(head, 'head', 'black', 'head back hole.001');
+  attachPart(head, 'head', 'orange', 'head back hole.001');
   attachPart(head, 'head', 'orange', 'ear', HEAD_AXIS);
   attachPart(head, 'head', 'lens', 'eyes', HEAD_AXIS);
   attachPart(head, 'head', 'black', 'head hole');
