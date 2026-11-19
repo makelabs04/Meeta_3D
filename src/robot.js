@@ -129,7 +129,7 @@ export function createRobot(gltf, variant) {
   attachPart(base, 'base', 'graphite', 'circle.001');
 
   attachPart(torso, 'torso', 'orange', 'chest');
-  attachPart(torso, 'torso', 'graphite', 'chest-back Plate');
+  attachPart(torso, 'torso', 'orange', 'chest-back Plate');
   attachPart(torso, 'torso', 'black', 'inside-plate');
   attachPart(torso, 'torso', 'black', 'shoulder');
   attachPart(torso, 'torso', 'black', 'Text');
