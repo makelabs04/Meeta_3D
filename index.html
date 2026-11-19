@@ -46,7 +46,7 @@
 
         <section class="viewer-panel" id="viewer-panel" role="tabpanel" aria-labelledby="tab-plate">
           <div class="stage" id="stage">
-            <canvas id="viewport" tabindex="0" aria-label="Interactive MEETA robot. Arrow keys rotate the view, plus and minus zoom, and R resets the view." aria-describedby="guide">This interactive view requires WebGL.</canvas>
+            <canvas id="viewport" tabindex="0" aria-label="Interactive MEETA robot. Drag to orbit in any direction, right drag to pan, T for top view, B for bottom view, R to reset." aria-describedby="guide">This interactive view requires WebGL.</canvas>
             <button class="motion-toggle" id="motion-toggle" type="button" aria-controls="motion-panel" aria-expanded="false">
               <span class="motion-toggle-dot" aria-hidden="true"></span> Motion controls
             </button>
@@ -60,7 +60,6 @@
                 <button type="button" data-gesture="wave" data-free-arms>Hi / Wave</button>
                 <button type="button" data-gesture="handshake" data-free-arms>Handshake</button>
                 <button type="button" data-gesture="welcome" data-free-arms>Welcome</button>
-                <button type="button" data-gesture="raise" data-free-arms>Raise arms</button>
                 <button type="button" data-gesture="nod">Head nod</button>
                 <button type="button" id="motion-home">Reset pose</button>
               </div>
@@ -92,6 +91,9 @@
                 <button id="zoom-out" type="button" title="Zoom out (−)" aria-label="Zoom out" disabled><svg class="icon"><use href="#i-minus"/></svg></button>
                 <button id="zoom-in" type="button" title="Zoom in (+)" aria-label="Zoom in" disabled><svg class="icon"><use href="#i-plus"/></svg></button>
                 <span class="tool-divider"></span>
+                <button id="view-top" class="view-angle" type="button" title="Top view (T)" aria-label="View from above" disabled>Top</button>
+                <button id="view-bottom" class="view-angle" type="button" title="Bottom view (B)" aria-label="View from below" disabled>Bottom</button>
+                <span class="tool-divider"></span>
                 <button id="reset" class="reset" type="button" title="Reset view (R)" aria-label="Reset view" disabled><svg class="icon"><use href="#i-reset"/></svg><span>Reset view</span></button>
               </div>
             </div>
@@ -105,7 +107,7 @@
 
           <div class="guide" id="guide">
             <span><svg class="icon"><use href="#i-pointer"/></svg><span class="mouse-hint">Head tracks pointer · hands follow nearby</span><span class="touch-hint">Tap to interact</span></span>
-            <span><svg class="icon"><use href="#i-orbit"/></svg>Drag to rotate</span>
+            <span><svg class="icon"><use href="#i-orbit"/></svg>Drag to orbit · Right-drag to pan</span>
             <span><svg class="icon"><use href="#i-scroll"/></svg><span class="mouse-hint">Scroll to zoom</span><span class="touch-hint">Pinch to zoom</span></span>
           </div>
         </section>
