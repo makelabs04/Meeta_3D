@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101112">
+    <meta name="description" content="Explore the MEETA humanoid robot in 3D. Switch configurations and move its parts with your pointer.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff782f'/%3E%3Cpath d='m16 5 10 6v11l-10 5-10-5V11l10-6m-10 6 10 5 10-5m-10 5v11' stroke='%23111213' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+    <title>MEETA Robot Explorer · MAKE Labs</title>
+    <script type="module" crossorigin src="./assets/index-74A-7k9q.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bz3f_q_w.css">
+  </head>
+  <body>
+    <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></symbol>
+      <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M4 8h4V4m8 0v4h4M8 20v-4H4m16 0h-4v4"/></symbol>
+      <symbol id="i-orbit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.3"/><path d="M20.3 5.9c1.7 2.4-.7 7-5.6 10.5S4.2 21.1 2.7 18.6c-1-1.4-.5-3.5 1.1-5.8M7 7.8a20 20 0 0 1 8.4-4.1"/><path d="m17.6 4.1 2.7 1.8.7-3.2"/></symbol>
+      <symbol id="i-pointer" viewBox="0 0 24 24"><path d="m5 3.5 13.5 9.7-7.4.7-3.7 6.6L5 3.5Z"/></symbol>
+      <symbol id="i-scroll" viewBox="0 0 24 24"><rect x="6" y="2.6" width="12" height="18.8" rx="6"/><path d="M12 6v4"/></symbol>
+      <symbol id="i-focus" viewBox="0 0 24 24"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/><circle cx="12" cy="12" r="2.1"/></symbol>
+      <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 9a8.2 8.2 0 1 1-.2 6M4 4v5.4h5.4"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14m-7-7v14"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    </svg>
+    <main class="explorer" id="explorer">
+      <header class="masthead">
+        <div class="brand" aria-label="MAKE Labs Research and Development">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="m16 3.5 10.7 6.2v12.5L16 28.5 5.3 22.2V9.7L16 3.5Z"/><path d="m5.5 9.8 10.5 6.1 10.5-6.1M16 16v12"/></g></svg>
+          </span>
+          <span class="wordmark"><b>MAKE</b> Labs</span>
+        </div>
+        <button class="fullscreen" id="fullscreen" type="button" aria-pressed="false" hidden>
+          <svg class="icon"><use href="#i-expand"/></svg><span>Fullscreen</span>
+        </button>
+      </header>
+
+      <div class="content">
+        <section class="heading-row" aria-label="Robot configurations">
+          <div>
+            <p class="eyebrow">Humanoid robot</p>
+            <h1>MEETA<span class="title-dot" aria-hidden="true">.</span></h1>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Robot configuration">
+            <button type="button" role="tab" id="tab-plate" aria-selected="true" aria-controls="viewer-panel" tabindex="0" data-model="plate">Plate</button>
+            <button type="button" role="tab" id="tab-tablet" aria-selected="false" aria-controls="viewer-panel" tabindex="-1" data-model="tablet">Tablet</button>
+            <button type="button" role="tab" id="tab-triangle" aria-selected="false" aria-controls="viewer-panel" tabindex="-1" data-model="triangle">Triangle body</button>
+          </div>
+        </section>
+
+        <section class="viewer-panel" id="viewer-panel" role="tabpanel" aria-labelledby="tab-plate">
+          <div class="stage" id="stage">
+            <canvas id="viewport" tabindex="0" aria-label="Interactive MEETA robot. Arrow keys rotate the view, plus and minus zoom, and R resets the view." aria-describedby="guide">This interactive view requires WebGL.</canvas>
+            <div class="hud">
+              <div class="readout">
+                <svg class="icon"><use href="#i-focus"/></svg>
+                <div><span class="readout-title">Part in focus</span><output id="part-name" aria-live="polite" aria-atomic="true">Full assembly</output></div>
+              </div>
+              <div class="view-tools" aria-label="View controls">
+                <button id="zoom-out" type="button" title="Zoom out (−)" aria-label="Zoom out" disabled><svg class="icon"><use href="#i-minus"/></svg></button>
+                <button id="zoom-in" type="button" title="Zoom in (+)" aria-label="Zoom in" disabled><svg class="icon"><use href="#i-plus"/></svg></button>
+                <span class="tool-divider"></span>
+                <button id="reset" class="reset" type="button" title="Reset view (R)" aria-label="Reset view" disabled><svg class="icon"><use href="#i-reset"/></svg><span>Reset view</span></button>
+              </div>
+            </div>
+            <div class="status" id="status-box" role="status" aria-live="polite">
+              <span class="loader-line" aria-hidden="true"></span>
+              <strong id="status-title">Loading Plate…</strong>
+              <span id="status-detail"></span>
+              <button type="button" id="retry" hidden>Try again</button>
+            </div>
+          </div>
+
+          <div class="guide" id="guide">
+            <span><svg class="icon"><use href="#i-pointer"/></svg><span class="mouse-hint">Hover to move parts</span><span class="touch-hint">Tap to move parts</span></span>
+            <span><svg class="icon"><use href="#i-orbit"/></svg>Drag to rotate</span>
+            <span><svg class="icon"><use href="#i-scroll"/></svg><span class="mouse-hint">Scroll to zoom</span><span class="touch-hint">Pinch to zoom</span></span>
+          </div>
+        </section>
+      </div>
+    </main>
+    <noscript><p>Please enable JavaScript to view the MEETA models.</p></noscript>
+  </body>
+</html>
