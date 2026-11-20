@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Explore the MAKE Labs MEETA smart factory in 3D. View inspection, rework and packing robots and play factory animations.">
+  <link rel="icon" type="image/png" href="./assets/logo.png">
+  <title>MEETA Workspace · MAKE Labs</title>
+  <link rel="stylesheet" href="./src/workspace.css">
+</head>
+<body>
+  <div class="workspace-page">
+    <header class="workspace-header">
+      <div class="workspace-header-inner">
+        <a class="workspace-brand" href="./index.html" aria-label="MAKE Labs, return to MEETA Explorer">
+          <img src="./assets/make-labs-logo.png" alt="MAKE Labs — Powering Progress" width="206" height="50">
+          <span class="brand-separator" aria-hidden="true"></span>
+          <span class="brand-label">3D Robot Explorer</span>
+        </a>
+        <a class="back-link" href="./index.html"><span aria-hidden="true">←</span> MEETA Explorer</a>
+      </div>
+    </header>
+
+    <main class="workspace-main">
+      <div class="workspace-heading">
+        <div class="workspace-heading-text">
+          <p class="workspace-eyebrow"><span></span> MAKE Labs · Smart manufacturing</p>
+          <h1>MEETA Workspace<span>.</span></h1>
+          <p>Explore the automated factory, follow MEETA's inspection, rework and packing stations.</p>
+        </div>
+        <button id="fullscreen" class="head-fullscreen" type="button" aria-label="Make factory viewer fullscreen" aria-pressed="false"><span aria-hidden="true">⛶</span> Fullscreen</button>
+      </div>
+
+      <section class="workspace-viewer" id="workspace-viewer" aria-label="Interactive MEETA smart factory">
+        <div class="workspace-stage" id="workspace-stage">
+          <canvas id="factory-canvas" tabindex="0" aria-label="3D smart factory: drag to rotate, right-drag to pan, scroll to zoom"></canvas>
+          <div class="stage-topline"><span class="live-mark" aria-hidden="true"></span><span>SMART FACTORY / 3D</span></div>
+          <div class="area-quickbar" role="group" aria-label="Focus the camera on a factory area">
+            <button type="button" data-focus="overview" aria-pressed="true">Overview</button>
+            <button type="button" data-focus="inspection" aria-pressed="false">Inspection</button>
+            <button type="button" data-focus="rework" aria-pressed="false">Rework</button>
+            <button type="button" data-focus="packing" aria-pressed="false">Packing</button>
+          </div>
+
+          <div id="factory-loading" class="factory-loading" role="status" aria-live="polite">
+            <div class="loading-track"><span></span></div>
+            <strong id="factory-loading-title">Loading MEETA Smart Factory…</strong>
+            <small id="factory-loading-detail">Preparing 3D environment</small>
+            <button id="factory-retry" type="button" hidden>Try again</button>
+          </div>
+
+          <div class="workspace-toolbar" role="group" aria-label="Factory animation and camera controls">
+            <div class="toolbar-group playback-group" role="group" aria-label="Animation playback">
+              <button type="button" id="play" title="Play factory animations" aria-label="Play animation" disabled><span aria-hidden="true">▶</span> <span class="button-text">Play</span></button>
+              <button type="button" id="pause" title="Pause at current animation frame" aria-label="Pause animation" disabled><span aria-hidden="true">Ⅱ</span> <span class="button-text">Pause</span></button>
+              <button type="button" id="stop" title="Stop and return to the start" aria-label="Stop animation" disabled><span aria-hidden="true">■</span> <span class="button-text">Stop</span></button>
+            </div>
+            <span class="toolbar-divider" aria-hidden="true"></span>
+            <div class="toolbar-group camera-group" role="group" aria-label="Camera controls">
+              <button type="button" id="zoom-out" title="Zoom out" aria-label="Zoom out" disabled>−</button>
+              <button type="button" id="zoom-in" title="Zoom in" aria-label="Zoom in" disabled>+</button>
+              <button type="button" id="view-front" title="Front view" disabled>Front</button>
+              <button type="button" id="view-top" title="Top-down view" disabled>Top</button>
+              <button type="button" id="view-bottom" title="View from below" disabled>Bottom</button>
+              <button type="button" id="fit" title="Fit the entire factory" disabled>⟲ <span class="fit-text">Fit factory</span></button>
+              <button type="button" id="stage-fullscreen" title="Toggle viewer fullscreen" aria-label="Toggle viewer fullscreen">⛶</button>
+            </div>
+          </div>
+        </div>
+        <div class="workspace-guide">
+          <span id="factory-status" role="status" aria-live="polite">Loading factory scene…</span>
+          <span class="guide-actions">Drag to rotate <b>·</b> Right-drag to pan <b>·</b> Scroll to zoom</span>
+        </div>
+      </section>
+      <footer class="workspace-footer"><span>MAKE Labs Research and Development</span><span>MEETA Smart Factory · Interactive 3D workspace</span></footer>
+    </main>
+  </div>
+  <noscript>Enable JavaScript to explore the MEETA Smart Factory.</noscript>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js",
+      "three/addons/": "./vendor/three/addons/"
+    }
+  }
+  </script>
+  <script type="module" src="./src/workspace.js"></script>
+</body>
+</html>
