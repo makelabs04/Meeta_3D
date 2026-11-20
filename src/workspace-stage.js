@@ -24,6 +24,8 @@ export class WorkspaceStage {
     this.activeArea = 'overview';
     this.robotObjects = Object.create(null);
     this.nodesByOriginalName = new Map();
+    this.workingJoints = [];
+    this.factoryClock = 0;
     this.needsRender = true;
     this.previousTime = 0;
     this.animationHandle = 0;
@@ -141,6 +143,45 @@ export class WorkspaceStage {
     console.info(`MEETA Workspace: hidden ${hiddenMasters} source robot meshes; camera targets:`,
       Object.keys(this.robotObjects).join(', ') || '(not found)');
     this.scene.add(this.model);
+
+    // The exported inspection and rework MEETAs stand a little too far from
+    // their touchscreens. Move ONLY those two robot roots in their local scene;
+    // nothing is moved inside the factory GLB on disk.
+    // The poses below were fitted to the real console display coordinates.
+    const stations = {
+      inspection: {
+        offset: [0, 0, -0.30],
+        joints: {
+          'shoulder L': [-1.16, 0.025],
+          'elbow L': [0.20, -0.052],
+          'shoulder R': [-0.80, 0.018],
+          'elbow R': [0.61, -0.026]
+        }
+      },
+      rework: {
+        offset: [0.03, 0, 0.07],
+        joints: {
+          'shoulder R': [-0.42, 0.028],
+          'elbow R': [-0.74, -0.055],
+          'shoulder L': [-0.38, 0.017],
+          'elbow L': [-0.68, -0.025]
+        }
+      }
+    };
+    this.workingJoints = [];
+    for (const [area, config] of Object.entries(stations)) {
+      const robot = this.robotObjects[area];
+      if (!robot) continue;
+      robot.position.add(new THREE.Vector3(...config.offset));
+      for (const [jointName, [pitch, amplitude]] of Object.entries(config.joints)) {
+        const joint = this.nodesByOriginalName.get(`${ROBOT_NAMES[area]} / ${jointName}`);
+        if (!joint) continue;
+        this.workingJoints.push({
+          joint, original: joint.quaternion.clone(), pitch, amplitude,
+          phase: jointName.includes(' L') ? 1.1 : 0
+        });
+      }
+    }
     this.model.updateMatrixWorld(true);
     const slab = this.nodesByOriginalName.get('Factory floor | 16 × 10 m epoxy slab');
     if (slab) {
@@ -157,13 +198,22 @@ export class WorkspaceStage {
       this.factoryBounds = sceneBounds;
     }
     this.mixer = new THREE.AnimationMixer(this.model);
-    this.actions = gltf.animations.map(clip => {
+    // Blender saved separate, SHORT clips for each display label. Looping these
+    // independently caused READY, PASS and REWORK to overlap. Hold each label's
+    // last frame until the factory's full 16s animation loop completes.
+    const factoryDuration = 16;
+    this.actions = gltf.animations.map(sourceClip => {
+      const clip = /^(Inspection operator console \/|Readout \/)/.test(sourceClip.name)
+        ? sourceClip.clone() : sourceClip;
+      if (clip !== sourceClip) clip.duration = factoryDuration;
       const action = this.mixer.clipAction(clip);
       action.setLoop(THREE.LoopRepeat, Infinity);
       action.play();
       return action;
     });
     this.playback = this.actions.length ? 'playing' : 'stopped';
+    this.factoryClock = 0;
+    this.applyWorkingPoses(0);
     this.focus('overview', false);
     this.onMessage(this.actions.length ? `${this.actions.length} animation tracks playing · Overview` : 'Factory loaded · No embedded animations');
     this.needsRender = true;
@@ -254,6 +304,8 @@ export class WorkspaceStage {
     if (this.playback === 'stopped') {
       for (const action of this.actions) action.reset().play();
       this.mixer.setTime(0);
+      this.factoryClock = 0;
+      this.applyWorkingPoses(0);
     }
     for (const action of this.actions) action.paused = false;
     this.playback = 'playing';
@@ -275,9 +327,26 @@ export class WorkspaceStage {
     for (const action of this.actions) { action.reset(); action.play(); action.paused = false; }
     this.mixer.setTime(0);
     for (const action of this.actions) action.paused = true;
+    this.factoryClock = 0;
+    this.applyWorkingPoses(0);
     this.playback = 'stopped';
     this.needsRender = true;
     return true;
+  }
+
+  // Pose only the inspection and rework arms toward their operator panels.
+  // We apply this AFTER the glTF animation mixer so the imported keyframes
+  // cannot pull the hands back away from the screens. Very small oscillations
+  // suggest touchscreen interaction without dramatic/unsupported arm motions.
+  applyWorkingPoses(seconds) {
+    const axis = new THREE.Vector3(1, 0, 0);
+    const delta = new THREE.Quaternion();
+    for (const item of this.workingJoints) {
+      const tapping = item.amplitude * Math.sin(seconds * 3.2 + item.phase);
+      delta.setFromAxisAngle(axis, item.pitch + tapping);
+      item.joint.quaternion.copy(item.original).multiply(delta);
+    }
+    this.model?.updateMatrixWorld(true);
   }
 
   frame(time) {
@@ -286,6 +355,8 @@ export class WorkspaceStage {
     this.previousTime = time;
     if (this.playback === 'playing' && this.mixer) {
       this.mixer.update(dt);
+      this.factoryClock += dt;
+      this.applyWorkingPoses(this.factoryClock);
       this.needsRender = true;
     }
     if (this.transition) {
