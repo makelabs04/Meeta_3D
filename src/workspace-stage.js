@@ -22,6 +22,8 @@ export class WorkspaceStage {
     this.playback = 'stopped';
     this.transition = null;
     this.activeArea = 'overview';
+    this.robotObjects = Object.create(null);
+    this.nodesByOriginalName = new Map();
     this.needsRender = true;
     this.previousTime = 0;
     this.animationHandle = 0;
@@ -116,18 +118,31 @@ export class WorkspaceStage {
   setModel(gltf) {
     if (this.model) this.scene.remove(this.model);
     this.model = gltf.scene;
-    // The master parts are Blender reference/prototype meshes. The factory has
-    // separate, animated copies for all three MEETA robots.
+    // GLTFLoader sanitizes Object3D.name (spaces, middle dots and slashes become
+    // underscores) for animation bindings. The original Blender/glTF name is
+    // preserved by GLTFLoader in object.userData.name. Always use that source
+    // name for locating robots and filtering the prototype parts.
+    this.robotObjects = Object.create(null);
+    this.nodesByOriginalName = new Map();
+    let hiddenMasters = 0;
     this.model.traverse(object => {
-      if (object.name.startsWith('Master /')) object.visible = false;
-      if (object.name === 'Studio | shadow floor') object.visible = false;
-      if (object.isMesh && object.material) {
-        object.frustumCulled = true;
+      const originalName = object.userData?.name || object.name || '';
+      if (originalName) this.nodesByOriginalName.set(originalName, object);
+      if (originalName.startsWith('Master /') || originalName.startsWith('00_MEETA_SOURCE')) {
+        object.visible = false;
+        hiddenMasters++;
       }
+      if (originalName === 'Studio | shadow floor') object.visible = false;
+      for (const [area, robotName] of Object.entries(ROBOT_NAMES)) {
+        if (originalName === robotName) this.robotObjects[area] = object;
+      }
+      if (object.isMesh) object.frustumCulled = true;
     });
+    console.info(`MEETA Workspace: hidden ${hiddenMasters} source robot meshes; camera targets:`,
+      Object.keys(this.robotObjects).join(', ') || '(not found)');
     this.scene.add(this.model);
     this.model.updateMatrixWorld(true);
-    const slab = this.model.getObjectByName('Factory floor | 16 × 10 m epoxy slab');
+    const slab = this.nodesByOriginalName.get('Factory floor | 16 × 10 m epoxy slab');
     if (slab) {
       this.factoryBounds = new THREE.Box3().setFromObject(slab);
       // Floor alone is very flat; include the 3-metre-tall factory above it.
@@ -166,7 +181,7 @@ export class WorkspaceStage {
   }
 
   getRobotCamera(area) {
-    const robot = this.model?.getObjectByName(ROBOT_NAMES[area]);
+    const robot = this.robotObjects?.[area];
     if (!robot) return null;
     robot.updateWorldMatrix(true, true);
     const anchor = robot.getWorldPosition(new THREE.Vector3());
